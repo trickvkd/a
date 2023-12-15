@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Registration"
+        android:textColor="@color/black"
+        android:textSize="25dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_gravity="center"
+        />
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:hint="Enter your Name"
+        android:id="@+id/name"
+        />
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:hint="Enter your Age"
+        android:id="@+id/age"/>
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:hint="Enter your Course Name"
+        android:id="@+id/cn"/>
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Insert"
+        android:id="@+id/b1"/>
+
+    <Button
+        android:id="@+id/b2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Update" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Delete"
+        android:id="@+id/b3"/>
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="View"
+        android:id="@+id/b4"/>
+
+</LinearLayout>
+
+
+package com.example.db;
+
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.database.Cursor;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+
+public class MainActivity extends AppCompatActivity {
+    Db db;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        EditText Name=findViewById(R.id.name);
+        EditText Age=findViewById(R.id.age);
+        EditText Course=findViewById(R.id.cn);
+        Button insert=findViewById(R.id.b1);
+        Button update=findViewById(R.id.b2);
+        Button delete=findViewById(R.id.b3);
+        Button view=findViewById(R.id.b4);
+        db=new Db(this);
+        insert.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String name=Name.getText().toString();
+                String age=Age.getText().toString();
+                String course=Course.getText().toString();
+                boolean checkInsertData=db.insertData(name,age,course);
+                if (checkInsertData==true)
+                    Toast.makeText(MainActivity.this,"New Entry Inserted",Toast.LENGTH_LONG).show();
+                else
+                    Toast.makeText(MainActivity.this,"No entry inserted",Toast.LENGTH_LONG).show();
+
+
+            }
+        });
+        update.setOnClickListener(new View.OnClickListener() {
+            public void onClick(android.view.View view) {
+                String name= Name.getText().toString();
+                String age=Age.getText().toString();
+                String course= Course.getText().toString();
+                boolean checkUpdateData= db.updateData(name,age,course);
+                if(checkUpdateData==true)
+                    Toast.makeText(MainActivity.this,"Entry updated",Toast.LENGTH_LONG).show();
+                else
+                Toast.makeText(MainActivity.this,"Entry Not Updated",Toast.LENGTH_LONG).show();
+            }
+        });
+        delete.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String name= Name.getText().toString();
+                boolean checkUpdateData= db.deleteData(name);
+                if(checkUpdateData==true)
+                    Toast.makeText(MainActivity.this,"Entry Deleted",Toast.LENGTH_LONG).show();
+                else
+                    Toast.makeText(MainActivity.this,"No entry to delete",Toast.LENGTH_LONG).show();
+
+            }
+        });
+        view.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Cursor res=db.getData();
+                if(res.getCount()==0){
+                    Toast.makeText(MainActivity.this,"No entry exist",Toast.LENGTH_LONG).show();
+                    return;
+                }
+                StringBuffer buffer=new StringBuffer();
+                while(res.moveToNext()){
+                    buffer.append("Name:"+res.getString(0)+"\n");
+                    buffer.append("Age:"+res.getString(1)+"\n");
+                    buffer.append("Course:"+res.getString(2)+"\n\n\n\n\n");
+                }
+                AlertDialog.Builder builder=new AlertDialog.Builder(MainActivity.this);
+                builder.setCancelable(true);
+                builder.setTitle("User Entries");
+                builder.setMessage(buffer.toString());
+                builder.show();
+
+            }
+        });
+    }
+}
+
+
+package com.example.db;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+
+import androidx.annotation.Nullable;
+
+public class Db extends SQLiteOpenHelper {
+    public Db(@Nullable Context context){
+        super(context,"userdata.db",null,1);
+    }
+    public void onCreate(SQLiteDatabase DB){
+        DB.execSQL("create Table userdetails(name TEXT primary key,age text,course TEXT)");
+    }
+    public void onUpgrade(SQLiteDatabase DB,int i,int i1){
+        DB.execSQL("drop table if exists userdetails");
+    }
+    public Boolean insertData(String name,String age,String course){
+        SQLiteDatabase DB=this.getWritableDatabase();
+        ContentValues contentValues=new ContentValues();
+        contentValues.put("name",name);
+        contentValues.put("age",age);
+        contentValues.put("course",course);
+        long result=DB.insert("Userdetails",null,contentValues);
+        if(result==-1)
+            return false;
+        else
+            return true;
+    }
+    public Boolean updateData(String name,String age,String course)
+    {
+        SQLiteDatabase DB=this.getWritableDatabase();
+        ContentValues contentValues=new ContentValues();
+        contentValues.put("name",name);
+        contentValues.put("age",age);
+        contentValues.put("course",course);
+        Cursor cursor=DB.rawQuery("select * from userdetails where name=?",new
+            String[]{name});
+        if (cursor.getCount()>0) {
+        long result = DB.update("userdetails", contentValues, "name=?", new String[]{name});
+        if (result == -1)
+            return false;
+        else
+            return true;
+    }
+else
+        {
+            return false;
+        }
+    }
+    public Boolean deleteData(String name){
+        SQLiteDatabase DB=this.getWritableDatabase();
+        Cursor cursor=DB.rawQuery("select * from userdetails where name=?",new String[]{name});
+        if (cursor.getCount()>0) {
+            long result = DB.delete("userdetails", "name=?", new String[]{name});
+            if (result == -1)
+                return false;
+            else
+                return true;
+        }
+         else
+             return false;
+
+
+    }
+    public Cursor getData(){
+        SQLiteDatabase DB=this.getWritableDatabase();
+        Cursor cursor=DB.rawQuery("select * from userdetails",null);
+        return cursor;
+    }
+
+
+}
